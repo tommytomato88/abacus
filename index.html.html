@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Abacus Budget</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --panel: rgba(23,26,35,.88);
+      --panel-2: rgba(32,36,50,.92);
+      --text: #f4f6fb;
+      --muted: #a9b0c3;
+      --line: rgba(255,255,255,.10);
+      --green: #50fa7b;
+      --red: #ff6b6b;
+      --blue: #6ea8fe;
+      --purple: #c084fc;
+      --yellow: #ffd166;
+      --orange: #ff9f1c;
+      --teal: #2dd4bf;
+      --pink: #ff7ab6;
+      --shadow: 0 16px 35px rgba(0,0,0,.32);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(110,168,254,.24), transparent 24rem),
+        radial-gradient(circle at 90% 5%, rgba(255,122,182,.16), transparent 24rem),
+        radial-gradient(circle at 50% 55%, rgba(45,212,191,.10), transparent 28rem),
+        linear-gradient(135deg, #07080c, var(--bg));
+      min-height: 100vh;
+      padding-bottom: 92px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(18px);
+      background: rgba(9,11,16,.84);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px 12px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: conic-gradient(from 180deg, var(--blue), var(--purple), var(--pink), var(--teal), var(--blue));
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 30px rgba(110,168,254,.25);
+      font-weight: 950;
+    }
+
+    .month-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    input, select, textarea, button { font: inherit; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px;
+      outline: none;
+    }
+
+    option { background: #171a23; color: var(--text); }
+
+    textarea { min-height: 74px; resize: vertical; }
+
+    button {
+      border: 0;
+      color: var(--text);
+      border-radius: 15px;
+      padding: 12px 14px;
+      background: var(--panel-2);
+      cursor: pointer;
+      font-weight: 780;
+      box-shadow: 0 6px 14px rgba(0,0,0,.18);
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .primary { background: linear-gradient(135deg, var(--blue), var(--purple)); }
+    .danger {
+      background: rgba(255,107,107,.18);
+      color: #ffd4d4;
+      border: 1px solid rgba(255,107,107,.35);
+    }
+    .good {
+      background: rgba(80,250,123,.16);
+      color: #d2ffd9;
+      border: 1px solid rgba(80,250,123,.28);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .tabbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(9,11,16,.94);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--line);
+    }
+
+    .tabbar button {
+      padding: 9px 6px;
+      font-size: .74rem;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    .tabbar button.active {
+      color: var(--text);
+      background: linear-gradient(135deg, rgba(110,168,254,.28), rgba(192,132,252,.28));
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    section { display: none; }
+    section.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), transparent 38%);
+      opacity: .55;
+    }
+
+    .card > * { position: relative; z-index: 1; }
+
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 128px;
+      justify-content: space-between;
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .icon-bubble {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      font-size: 1.25rem;
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--line);
+    }
+
+    .label { color: var(--muted); font-size: .85rem; }
+    .amount {
+      font-size: 1.55rem;
+      font-weight: 950;
+      letter-spacing: -.6px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--line);
+      width: fit-content;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    h2, h3 { margin-top: 0; letter-spacing: -.2px; }
+    .mini { font-size: .82rem; color: var(--muted); line-height: 1.35; }
+
+    .list { display: flex; flex-direction: column; gap: 10px; }
+
+    .item {
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .item strong { font-size: .98rem; }
+    .item .meta { color: var(--muted); font-size: .82rem; margin-top: 3px; }
+    .item .amt { font-weight: 950; text-align: right; white-space: nowrap; }
+
+    .bar-wrap {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      margin-top: 7px;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      width: 0;
+      transition: width .25s ease;
+    }
+
+    .chart-wrap {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    canvas { width: 100%; max-height: 300px; }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: .86rem;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { color: var(--muted); font-size: .78rem; }
+
+    .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .tiny { padding: 7px 9px; border-radius: 10px; font-size: .78rem; box-shadow: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 92px;
+      transform: translateX(-50%);
+      background: rgba(32,36,50,.96);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      z-index: 20;
+      max-width: calc(100vw - 28px);
+      display: none;
+    }
+
+    @media (max-width: 840px) {
+      .span-3, .span-4, .span-6, .span-8 { grid-column: span 12; }
+      .form-grid { grid-template-columns: 1fr; }
+      header { padding-top: 10px; }
+      h1 { font-size: 1.25rem; }
+      .month-picker { font-size: .8rem; }
+      .topbar { align-items: flex-start; }
+      .item { grid-template-columns: auto 1fr; }
+      .item .amt { grid-column: 2; text-align: left; }
+      .chart-wrap { grid-template-columns: 1fr; }
+      table { font-size: .78rem; }
+      th:nth-child(6), td:nth-child(6), th:nth-child(7), td:nth-child(7) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <h1><span class="logo">A</span> Abacus</h1>
+      <div class="month-picker">
+        <label for="monthFilter">Month</label>
+        <input id="monthFilter" type="month" />
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="dashboard" class="active">
+      <div class="grid">
+        <div class="card metric span-3">
+          <div class="metric-top"><div><div class="label">Income</div><div class="amount" id="incomeTotal">$0</div></div><div class="icon-bubble">💵</div></div>
+          <span class="pill">Money arrived. Suspicious.</span>
+        </div>
+        <div class="card metric span-3">
+          <div class="metric-top"><div><div class="label">Spending</div><div class="amount" id="expenseTotal">$0</div></div><div class="icon-bubble">🧾</div></div>
+          <span class="pill">Leak detector armed</span>
+        </div>
+        <div class="card metric span-3">
+          <div class="metric-top"><div><div class="label">Savings Vaults</div><div class="amount" id="savingsTotal">$0</div></div><div class="icon-bubble">🏦</div></div>
+          <span class="pill">Separate from spending</span>
+        </div>
+        <div class="card metric span-3">
+          <div class="metric-top"><div><div class="label">Investments</div><div class="amount" id="investmentTotal">$0</div></div><div class="icon-bubble">📈</div></div>
+          <span class="pill">Future-you bribery</span>
+        </div>
+
+        <div class="card span-6">
+          <h3>Spending by Category</h3>
+          <div class="chart-wrap">
+            <canvas id="categoryDonut" height="210"></canvas>
+            <div id="categoryLegend" class="legend"></div>
+          </div>
+        </div>
+
+        <div class="card span-6">
+          <h3>Monthly Flow</h3>
+          <canvas id="cashChart" height="260"></canvas>
+        </div>
+
+        <div class="card span-6">
+          <h3>Biggest Leaks</h3>
+          <div id="leakList" class="list"></div>
+        </div>
+        <div class="card span-6">
+          <h3>Recurring / Subscriptions</h3>
+          <div id="recurringList" class="list"></div>
+        </div>
+
+        <div class="card span-12">
+          <h3>Recent Transactions</h3>
+          <div id="recentList" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="add">
+      <div class="card">
+        <h2 id="formTitle">Add Transaction</h2>
+        <form id="transactionForm" class="form-grid">
+          <input type="hidden" id="editId" />
+          <div><label class="label">Type</label><select id="type" required><option value="expense">Expense</option><option value="income">Income</option><option value="savings">Savings Vault Contribution</option><option value="investment">Investment Contribution</option></select></div>
+          <div><label class="label">Date</label><input id="date" type="date" required /></div>
+          <div><label class="label">Amount</label><input id="amount" type="number" min="0" step="0.01" placeholder="0.00" required /></div>
+          <div><label class="label">Merchant / Payee</label><input id="merchant" type="text" placeholder="Costco, SoFi, Schwab..." required /></div>
+          <div><label class="label">Category</label><select id="category" required></select></div>
+          <div><label class="label">Subcategory / Vault</label><select id="subcategory" required></select></div>
+          <div><label class="label">Account</label><input id="account" type="text" placeholder="Optional: SoFi, Chase, Schwab..." /></div>
+          <div><label class="label">Recurring?</label><select id="recurring"><option value="false">No</option><option value="true">Yes</option></select></div>
+          <div><label class="label">Essential?</label><select id="essential"><option value="true">Essential</option><option value="false">Discretionary</option></select></div>
+          <div class="full"><label class="label">Notes</label><textarea id="notes" placeholder="Optional notes, because apparently money needs a diary."></textarea></div>
+          <div class="full row"><button class="primary" type="submit">Save Transaction</button><button type="button" id="resetFormBtn">Reset</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="transactions">
+      <div class="card">
+        <h2>Transactions</h2>
+        <div class="form-grid">
+          <div><label class="label">Search</label><input id="searchBox" placeholder="Merchant, category, notes..." /></div>
+          <div><label class="label">Type Filter</label><select id="typeFilter"><option value="all">All</option><option value="expense">Expense</option><option value="income">Income</option><option value="savings">Savings</option><option value="investment">Investment</option></select></div>
+        </div>
+        <div style="overflow-x:auto; margin-top:14px;">
+          <table><thead><tr><th>Date</th><th>Type</th><th>Merchant</th><th>Category</th><th>Subcategory</th><th>Account</th><th>Recurring</th><th>Amount</th><th></th></tr></thead><tbody id="transactionTable"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="vaults">
+      <div class="grid"><div class="card span-12"><h2>Savings Vaults</h2><p class="mini">This tracks contributions only. Starting balances can be added as starting contribution transactions.</p><div id="vaultList" class="list"></div></div></div>
+    </section>
+
+    <section id="settings">
+      <div class="grid">
+        <div class="card span-6"><h2>Backup / Export</h2><p class="mini">Local storage means your data lives in this browser on this device. Export backups unless you trust Chrome with your financial soul.</p><div class="row"><button id="exportJsonBtn" class="good">Export JSON Backup</button><button id="exportCsvBtn">Export CSV</button></div><hr style="border-color: var(--line); margin:16px 0;"><label class="label">Import JSON Backup</label><input id="importFile" type="file" accept="application/json,.json" /></div>
+        <div class="card span-6"><h2>Demo / Reset</h2><p class="mini">Demo data lets you test the dashboard without manually inventing fake Costco trips like a medieval accountant.</p><div class="row"><button id="demoBtn" class="primary">Load Demo Data</button><button id="clearBtn" class="danger">Clear All Data</button></div></div>
+        <div class="card span-12"><h2>Categories</h2><div id="categorySettings" class="mini"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="active" data-tab="dashboard">Dashboard</button>
+    <button data-tab="add">Add</button>
+    <button data-tab="transactions">List</button>
+    <button data-tab="vaults">Vaults</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+const STORAGE_KEY = "abacus_budget_v1";
+
+const categories = {
+  Income: ["Paycheck", "VA Disability", "Other Income"],
+  Housing: ["Mortgage", "Property Taxes", "Homeowners Insurance", "Utilities", "Electric", "Gas", "Water/Sewer/Trash", "Internet", "Home Maintenance"],
+  "Home Projects": ["Front Yard Renovation", "Tools & Equipment", "Landscaping", "Garden"],
+  Transportation: ["Fuel", "Insurance", "Registration", "Maintenance & Repairs", "Modifications"],
+  Family: ["Grayson", "Clothes", "Toys", "Activities", "Medical"],
+  Food: ["Groceries", "Coffee", "Alcohol"],
+  Health: ["Medical", "Dental", "Prescriptions"],
+  "Pets & Animals": ["Chickens", "Olive", "Luna"],
+  Entertainment: ["Audible", "Family Outings"],
+  "Hunting / Shooting": ["Ammunition", "Range/Match Fees", "Gear", "Hunting Expenses"],
+  Investments: ["Brokerage Contributions", "Crypto Contributions"],
+  Travel: ["Travel"],
+  Insurance: ["Vehicle Insurance"],
+  "Miscellaneous and Gifts": ["Miscellaneous", "Gifts"]
+};
+
+const savingsVaults = [
+  "Amanda’s Wedding & Bach Party", "Car", "Grayson Savings", "Holiday Fund",
+  "Hunting/Fishing", "Martinez Dr.", "San Marcos", "General Savings",
+  "Tattoos", "Weed Abatement"
+];
+
+const categoryMeta = {
+  Income: { icon: "💵", color: "#50fa7b" },
+  Housing: { icon: "🏠", color: "#6ea8fe" },
+  "Home Projects": { icon: "🛠️", color: "#ff9f1c" },
+  Transportation: { icon: "🚗", color: "#ffd166" },
+  Family: { icon: "👨‍👩‍👦", color: "#ff7ab6" },
+  Food: { icon: "🛒", color: "#2dd4bf" },
+  Health: { icon: "💊", color: "#c084fc" },
+  "Pets & Animals": { icon: "🐾", color: "#50fa7b" },
+  Entertainment: { icon: "🎧", color: "#ff7ab6" },
+  "Hunting / Shooting": { icon: "🎯", color: "#ff6b6b" },
+  Investments: { icon: "📈", color: "#2dd4bf" },
+  Travel: { icon: "✈️", color: "#6ea8fe" },
+  Insurance: { icon: "🛡️", color: "#ffd166" },
+  Savings: { icon: "🏦", color: "#c084fc" },
+  "Miscellaneous and Gifts": { icon: "🎁", color: "#a9b0c3" }
+};
+
+const colors = ["#6ea8fe", "#c084fc", "#ff7ab6", "#2dd4bf", "#ffd166", "#ff9f1c", "#50fa7b", "#ff6b6b", "#a78bfa", "#22c55e"];
+
+let state = loadState();
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return { transactions: [] };
+  try {
+    const parsed = JSON.parse(raw);
+    return { transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [] };
+  } catch {
+    return { transactions: [] };
+  }
+}
+
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function money(n) { return Number(n || 0).toLocaleString(undefined, { style: "currency", currency: "USD" }); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function currentMonth() { return new Date().toISOString().slice(0, 7); }
+
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.style.display = "block";
+  setTimeout(() => toast.style.display = "none", 2400);
+}
+
+function monthTransactions() {
+  const m = document.getElementById("monthFilter").value;
+  return state.transactions.filter(t => (t.date || "").slice(0, 7) === m);
+}
+
+function sum(list, predicate = () => true) {
+  return list.filter(predicate).reduce((acc, t) => acc + Number(t.amount || 0), 0);
+}
+
+function groupSum(list, keyFn, predicate = () => true) {
+  return list.filter(predicate).reduce((acc, t) => {
+    const key = keyFn(t) || "Uncategorized";
+    acc[key] = (acc[key] || 0) + Number(t.amount || 0);
+    return acc;
+  }, {});
+}
+
+function setup() {
+  document.getElementById("date").value = todayISO();
+  document.getElementById("monthFilter").value = currentMonth();
+  document.querySelectorAll(".tabbar button").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+  document.getElementById("type").addEventListener("change", populateCategories);
+  document.getElementById("category").addEventListener("change", populateSubcategories);
+  document.getElementById("transactionForm").addEventListener("submit", saveTransactionFromForm);
+  document.getElementById("resetFormBtn").addEventListener("click", resetForm);
+  document.getElementById("monthFilter").addEventListener("change", renderAll);
+  document.getElementById("searchBox").addEventListener("input", renderTransactions);
+  document.getElementById("typeFilter").addEventListener("change", renderTransactions);
+  document.getElementById("exportJsonBtn").addEventListener("click", exportJSON);
+  document.getElementById("exportCsvBtn").addEventListener("click", exportCSV);
+  document.getElementById("importFile").addEventListener("change", importJSON);
+  document.getElementById("demoBtn").addEventListener("click", loadDemoData);
+  document.getElementById("clearBtn").addEventListener("click", clearData);
+  populateCategories();
+  renderCategorySettings();
+  renderAll();
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
+  renderAll();
+}
+
+function populateCategories() {
+  const type = document.getElementById("type").value;
+  const category = document.getElementById("category");
+  category.innerHTML = "";
+  let opts = [];
+  if (type === "income") opts = ["Income"];
+  else if (type === "savings") opts = ["Savings"];
+  else if (type === "investment") opts = ["Investments"];
+  else opts = Object.keys(categories).filter(c => c !== "Income" && c !== "Investments");
+  opts.forEach(c => category.appendChild(new Option(`${categoryMeta[c]?.icon || "•"} ${c}`, c)));
+  populateSubcategories();
+}
+
+function populateSubcategories() {
+  const type = document.getElementById("type").value;
+  const cat = document.getElementById("category").value;
+  const sub = document.getElementById("subcategory");
+  sub.innerHTML = "";
+  const opts = type === "savings" ? savingsVaults : (categories[cat] || [cat]);
+  opts.forEach(s => sub.appendChild(new Option(s, s)));
+}
+
+function saveTransactionFromForm(e) {
+  e.preventDefault();
+  const id = document.getElementById("editId").value || crypto.randomUUID();
+  const t = {
+    id,
+    type: document.getElementById("type").value,
+    date: document.getElementById("date").value,
+    amount: Number(document.getElementById("amount").value),
+    merchant: document.getElementById("merchant").value.trim(),
+    category: document.getElementById("category").value,
+    subcategory: document.getElementById("subcategory").value,
+    account: document.getElementById("account").value.trim(),
+    recurring: document.getElementById("recurring").value === "true",
+    essential: document.getElementById("essential").value === "true",
+    notes: document.getElementById("notes").value.trim()
+  };
+  const idx = state.transactions.findIndex(x => x.id === id);
+  if (idx >= 0) state.transactions[idx] = t;
+  else state.transactions.push(t);
+  saveState();
+  resetForm();
+  renderAll();
+  showToast("Saved. The ledger beast has been fed.");
+  switchTab("dashboard");
+}
+
+function resetForm() {
+  document.getElementById("transactionForm").reset();
+  document.getElementById("editId").value = "";
+  document.getElementById("formTitle").textContent = "Add Transaction";
+  document.getElementById("date").value = todayISO();
+  populateCategories();
+}
+
+function editTransaction(id) {
+  const t = state.transactions.find(x => x.id === id);
+  if (!t) return;
+  switchTab("add");
+  document.getElementById("formTitle").textContent = "Edit Transaction";
+  document.getElementById("editId").value = t.id;
+  document.getElementById("type").value = t.type;
+  populateCategories();
+  document.getElementById("category").value = t.category;
+  populateSubcategories();
+  document.getElementById("subcategory").value = t.subcategory;
+  document.getElementById("date").value = t.date;
+  document.getElementById("amount").value = t.amount;
+  document.getElementById("merchant").value = t.merchant;
+  document.getElementById("account").value = t.account || "";
+  document.getElementById("recurring").value = String(!!t.recurring);
+  document.getElementById("essential").value = String(!!t.essential);
+  document.getElementById("notes").value = t.notes || "";
+}
+
+function deleteTransaction(id) {
+  if (!confirm("Delete this transaction? Tiny financial funeral incoming.")) return;
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  saveState();
+  renderAll();
+}
+
+function renderAll() {
+  renderDashboard();
+  renderTransactions();
+  renderVaults();
+}
+
+function renderDashboard() {
+  const tx = monthTransactions();
+  document.getElementById("incomeTotal").textContent = money(sum(tx, t => t.type === "income"));
+  document.getElementById("expenseTotal").textContent = money(sum(tx, t => t.type === "expense"));
+  document.getElementById("savingsTotal").textContent = money(sum(tx, t => t.type === "savings"));
+  document.getElementById("investmentTotal").textContent = money(sum(tx, t => t.type === "investment"));
+  const byCat = groupSum(tx, t => t.category, t => t.type === "expense");
+  drawDonut("categoryDonut", byCat, "categoryLegend");
+  drawFlowChart("cashChart", {
+    Income: sum(tx, t => t.type === "income"),
+    Spending: sum(tx, t => t.type === "expense"),
+    Savings: sum(tx, t => t.type === "savings"),
+    Investments: sum(tx, t => t.type === "investment")
+  });
+  renderLeakList(byCat);
+  renderRecurring(tx);
+  renderRecent(tx);
+}
+
+function canvasPrep(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || 300;
+  const cssHeight = canvas.height;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+  return { canvas, ctx, w: cssWidth, h: cssHeight };
+}
+
+function drawDonut(canvasId, data, legendId) {
+  const { ctx, w, h } = canvasPrep(canvasId);
+  const legend = document.getElementById(legendId);
+  const entries = Object.entries(data).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  const total = entries.reduce((a, [,v]) => a + v, 0);
+  if (!entries.length || !total) {
+    ctx.fillStyle = "#a9b0c3";
+    ctx.font = "14px system-ui";
+    ctx.fillText("No spending yet. The void is financially quiet.", 12, 34);
+    legend.innerHTML = "";
+    return;
+  }
+
+  const cx = w / 2, cy = h / 2, radius = Math.min(w, h) * .38;
+  let start = -Math.PI / 2;
+
+  entries.forEach(([label, val], i) => {
+    const meta = categoryMeta[label] || {};
+    const color = meta.color || colors[i % colors.length];
+    const angle = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, start, start + angle);
+    ctx.lineWidth = 34;
+    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    start += angle;
+  });
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius - 22, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(9,11,16,.88)";
+  ctx.fill();
+
+  ctx.fillStyle = "#f4f6fb";
+  ctx.font = "800 20px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText(money(total), cx, cy - 2);
+  ctx.fillStyle = "#a9b0c3";
+  ctx.font = "12px system-ui";
+  ctx.fillText("spending", cx, cy + 18);
+  ctx.textAlign = "left";
+
+  legend.innerHTML = entries.map(([label, val], i) => {
+    const meta = categoryMeta[label] || {};
+    const color = meta.color || colors[i % colors.length];
+    const pct = Math.round((val / total) * 100);
+    return `<div class="legend-row"><span class="dot" style="background:${color}"></span><span>${meta.icon || "•"} ${label}</span><strong>${pct}%</strong></div>`;
+  }).join("");
+}
+
+function drawFlowChart(canvasId, data) {
+  const { ctx, w, h } = canvasPrep(canvasId);
+  const entries = Object.entries(data);
+  const max = Math.max(1, ...entries.map(e => e[1]));
+  const chartH = h - 62;
+  const barW = Math.min(64, (w - 54) / entries.length - 16);
+  const gap = (w - 40 - barW * entries.length) / (entries.length - 1 || 1);
+  const bottom = h - 34;
+
+  entries.forEach(([label, val], i) => {
+    const x = 20 + i * (barW + gap);
+    const bh = Math.max(3, (val / max) * chartH);
+    const y = bottom - bh;
+    const color = label === "Income" ? "#50fa7b" : label === "Spending" ? "#ff6b6b" : label === "Savings" ? "#c084fc" : "#2dd4bf";
+
+    const grad = ctx.createLinearGradient(0, y, 0, bottom);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, color + "66");
+
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, barW, bh, 12);
+    ctx.fill();
+
+    ctx.fillStyle = "#f4f6fb";
+    ctx.font = "800 12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(money(val), x + barW/2, Math.max(14, y - 8));
+
+    ctx.fillStyle = "#a9b0c3";
+    ctx.font = "12px system-ui";
+    ctx.fillText(label, x + barW/2, bottom + 20);
+  });
+  ctx.textAlign = "left";
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function renderLeakList(byCat) {
+  const box = document.getElementById("leakList");
+  const entries = Object.entries(byCat).sort((a,b) => b[1] - a[1]).slice(0, 6);
+  if (!entries.length) {
+    box.innerHTML = `<div class="mini">No spending logged this month. Either disciplined or hiding evidence.</div>`;
+    return;
+  }
+  const max = Math.max(...entries.map(e => e[1]));
+  box.innerHTML = entries.map(([cat, val], i) => {
+    const meta = categoryMeta[cat] || { icon: "•", color: colors[i % colors.length] };
+    return `<div>
+      <div class="row" style="justify-content:space-between;">
+        <strong>${meta.icon} ${cat}</strong><strong>${money(val)}</strong>
+      </div>
+      <div class="bar-wrap"><div class="bar" style="width:${(val/max)*100}%; background:linear-gradient(90deg, ${meta.color}, ${meta.color}88)"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function renderRecurring(tx) {
+  const box = document.getElementById("recurringList");
+  const rec = tx.filter(t => t.recurring).sort((a,b) => b.amount - a.amount);
+  if (!rec.length) {
+    box.innerHTML = `<div class="mini">No recurring expenses logged this month. Subscriptions are waiting in the grass.</div>`;
+    return;
+  }
+  box.innerHTML = rec.map(t => {
+    const meta = categoryMeta[t.category] || { icon: "•", color: "#a9b0c3" };
+    return `<div class="item">
+      <div class="icon-bubble" style="background:${meta.color}22">${meta.icon}</div>
+      <div><strong>${escapeHtml(t.merchant)}</strong><div class="meta">${t.category} · ${t.subcategory} · ${t.account || "No account"}</div></div>
+      <div class="amt">${money(t.amount)}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderRecent(tx) {
+  const box = document.getElementById("recentList");
+  const recent = [...tx].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 8);
+  if (!recent.length) {
+    box.innerHTML = `<div class="mini">No transactions for this month yet.</div>`;
+    return;
+  }
+  box.innerHTML = recent.map(t => {
+    const meta = categoryMeta[t.category] || { icon: t.type === "savings" ? "🏦" : "•", color: "#a9b0c3" };
+    return `<div class="item">
+      <div class="icon-bubble" style="background:${meta.color}22">${meta.icon}</div>
+      <div><strong>${escapeHtml(t.merchant)}</strong><div class="meta">${t.date} · ${t.type} · ${t.category} / ${t.subcategory}</div></div>
+      <div class="amt">${money(t.amount)}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderTransactions() {
+  const tbody = document.getElementById("transactionTable");
+  const q = (document.getElementById("searchBox")?.value || "").toLowerCase();
+  const type = document.getElementById("typeFilter")?.value || "all";
+  let rows = monthTransactions();
+  if (type !== "all") rows = rows.filter(t => t.type === type);
+  if (q) rows = rows.filter(t => JSON.stringify(t).toLowerCase().includes(q));
+  rows.sort((a,b) => b.date.localeCompare(a.date));
+  tbody.innerHTML = rows.map(t => {
+    const meta = categoryMeta[t.category] || { icon: "•" };
+    return `<tr>
+      <td>${t.date}</td><td>${t.type}</td><td>${escapeHtml(t.merchant)}</td><td>${meta.icon} ${t.category}</td><td>${t.subcategory}</td><td>${escapeHtml(t.account || "")}</td><td>${t.recurring ? "Yes" : "No"}</td><td><strong>${money(t.amount)}</strong></td>
+      <td class="actions"><button class="tiny" onclick="editTransaction('${t.id}')">Edit</button><button class="tiny danger" onclick="deleteTransaction('${t.id}')">Delete</button></td>
+    </tr>`;
+  }).join("");
+  if (!rows.length) tbody.innerHTML = `<tr><td colspan="9" class="mini">No transactions found.</td></tr>`;
+}
+
+function renderVaults() {
+  const box = document.getElementById("vaultList");
+  const tx = monthTransactions();
+  const totals = groupSum(tx, t => t.subcategory, t => t.type === "savings");
+  const max = Math.max(1, ...Object.values(totals));
+  box.innerHTML = savingsVaults.map((v, i) => {
+    const val = totals[v] || 0;
+    const color = colors[i % colors.length];
+    return `<div>
+      <div class="row" style="justify-content:space-between;"><strong>🏦 ${v}</strong><strong>${money(val)}</strong></div>
+      <div class="bar-wrap"><div class="bar" style="width:${(val/max)*100}%; background:linear-gradient(90deg, ${color}, ${color}88)"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function renderCategorySettings() {
+  const box = document.getElementById("categorySettings");
+  let html = `<strong>🏦 Savings Vaults:</strong> ${savingsVaults.join(", ")}<br><br>`;
+  html += Object.entries(categories).map(([cat, subs]) => `<strong>${categoryMeta[cat]?.icon || "•"} ${cat}:</strong> ${subs.join(", ")}`).join("<br><br>");
+  box.innerHTML = html;
+}
+
+function exportJSON() { downloadFile(`abacus-backup-${todayISO()}.json`, JSON.stringify(state, null, 2), "application/json"); }
+function exportCSV() {
+  const headers = ["date","type","amount","merchant","category","subcategory","account","recurring","essential","notes"];
+  const lines = [headers.join(",")];
+  state.transactions.forEach(t => lines.push(headers.map(h => csvCell(t[h])).join(",")));
+  downloadFile(`abacus-transactions-${todayISO()}.csv`, lines.join("\n"), "text/csv");
+}
+function csvCell(v) { const s = String(v ?? ""); return `"${s.replaceAll('"', '""')}"`; }
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed.transactions)) throw new Error("Invalid file");
+      state = parsed;
+      saveState();
+      renderAll();
+      showToast("Backup imported. The tiny money cave has been restored.");
+    } catch { alert("That JSON backup did not look valid."); }
+  };
+  reader.readAsText(file);
+}
+
+function clearData() {
+  if (!confirm("Clear ALL Abacus data on this device? This is the big red button humans keep pressing.")) return;
+  state = { transactions: [] };
+  saveState();
+  renderAll();
+  showToast("All local data cleared.");
+}
+
+function loadDemoData() {
+  const m = document.getElementById("monthFilter").value || currentMonth();
+  const demo = [
+    ["income", `${m}-01`, 2704.30, "VA Disability", "Income", "VA Disability", "SoFi Checking", false, true, ""],
+    ["income", `${m}-07`, 2185.42, "Paycheck", "Income", "Paycheck", "SoFi Checking", false, true, ""],
+    ["expense", `${m}-02`, 2450.00, "Mortgage", "Housing", "Mortgage", "SoFi Checking", true, true, ""],
+    ["expense", `${m}-03`, 185.22, "PG&E", "Housing", "Electric", "SoFi Checking", true, true, ""],
+    ["expense", `${m}-04`, 132.44, "Costco", "Food", "Groceries", "Chase Sapphire", false, true, ""],
+    ["expense", `${m}-05`, 16.99, "Audible", "Entertainment", "Audible", "Chase Sapphire", true, false, ""],
+    ["expense", `${m}-08`, 68.20, "Chevron", "Transportation", "Fuel", "Chase Sapphire", false, true, ""],
+    ["expense", `${m}-10`, 74.99, "Range Fee", "Hunting / Shooting", "Range/Match Fees", "Chase Sapphire", false, false, ""],
+    ["expense", `${m}-12`, 42.31, "Chicken Feed", "Pets & Animals", "Chickens", "SoFi Checking", false, true, ""],
+    ["savings", `${m}-13`, 250.00, "Transfer to Vault", "Savings", "General Savings", "SoFi Savings", false, true, ""],
+    ["savings", `${m}-14`, 100.00, "Transfer to Vault", "Savings", "Holiday Fund", "SoFi Savings", false, true, ""],
+    ["investment", `${m}-15`, 75.00, "Schwab Auto Deposit", "Investments", "Brokerage Contributions", "Schwab", true, false, ""],
+    ["investment", `${m}-16`, 50.00, "Crypto Buy", "Investments", "Crypto Contributions", "Coinbase", true, false, ""],
+  ].map(row => ({ id: crypto.randomUUID(), type: row[0], date: row[1], amount: row[2], merchant: row[3], category: row[4], subcategory: row[5], account: row[6], recurring: row[7], essential: row[8], notes: row[9] }));
+  state.transactions = [...state.transactions, ...demo];
+  saveState();
+  renderAll();
+  showToast("Demo data loaded.");
+}
+
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[s]));
+}
+
+setup();
+</script>
+</body>
+</html>
